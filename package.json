@@ -1,0 +1,17 @@
+{
+  "name": "encrypt-upload",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "connect-busboy": "0.0.2",
+    "express": "^4.15.3",
+    "fs-extra": "^3.0.1",
+    "path": "^0.12.7"
+  }
+}
