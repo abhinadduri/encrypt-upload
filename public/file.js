@@ -1,3 +1,83 @@
+function download() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/download', true);
+  xhr.responseType = 'blob';
+  // $.each(SERVER.authorization(), function(k, v) {
+  //     xhr.setRequestHeader(k, v);
+  // });
+  // xhr.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+  xhr.onload = function(e) {
+      if (this.status == 200) {
+          let self = this;
+          var blob = new Blob([this.response], {type: 'image/png'});
+          var arrayBuffer;
+          var fileReader = new FileReader();
+          fileReader.onload = function() {
+              arrayBuffer = this.result;
+              // console.log(arrayBuffer);
+              var array = new Uint8Array(arrayBuffer);
+              var salt = new Uint8Array(JSON.parse(document.getElementById('salt').value));
+              window.crypto.subtle.importKey(
+                  "jwk", //can be "jwk" or "raw"
+                  {   //this is an example jwk key, "raw" would be an ArrayBuffer
+                      kty: "oct",
+                      k: document.getElementById('keyhash').value,
+                      alg: "A128CBC",
+                      ext: true,
+                  },
+                  {   //this is the algorithm options
+                      name: "AES-CBC",
+                  },
+                  true, //whether the key is extractable (i.e. can be used in exportKey)
+                  ["encrypt", "decrypt"] //can be "encrypt", "decrypt", "wrapKey", or "unwrapKey"
+              )
+              .then(function(key){
+                  //returns the symmetric key
+                  window.crypto.subtle.decrypt(
+                      {
+                          name: "AES-CBC",
+                          iv: salt, //The initialization vector you used to encrypt
+                      },
+                      key, //from generateKey or importKey above
+                      array //ArrayBuffer of the data
+                  )
+                  .then(function(decrypted){
+                      //returns an ArrayBuffer containing the decrypted data
+                      // let original = new Uint8Array(decrypted);
+                      console.log(self);
+                      var dataView = new DataView(decrypted);
+                      var blob = new Blob([dataView]);
+                      var downloadUrl = URL.createObjectURL(blob);
+                      var a = document.createElement("a");
+                      a.href = downloadUrl;
+                      a.download = "test.txt";
+                      document.body.appendChild(a);
+                      a.click();
+                  })
+                  .catch(function(err){
+                      console.error(err);
+                  });
+                  // console.log(key);
+              })
+              .catch(function(err){
+                  console.error(err);
+              });
+          };
+          fileReader.readAsArrayBuffer(blob);
+          // console.log(blob);
+          var downloadUrl = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = downloadUrl;
+          a.download = "feheroes.png";
+          // document.body.appendChild(a);
+          // a.click();
+      } else {
+          alert('Unable to download excel.')
+      }
+  };
+  xhr.send();
+}
+
 function onChange(event) {
   var file = event.target.files[0];
   var reader = new FileReader();
@@ -6,14 +86,14 @@ function onChange(event) {
     let self = this;
     window.crypto.subtle.generateKey({
       name: "AES-CBC",
-      length: 256 
+      length: 128 
     },
     true, //whether the key is extractable (i.e. can be used in exportKey)
     ["encrypt", "decrypt"])
     .then(function(key){
       //returns a key object
       var arrayBuffer = self.result;
-      // array = new Uint8Array(arrayBuffer),
+      var array = new Uint8Array(arrayBuffer);
       // binaryString = String.fromCharCode.apply(null, array);
 
       // console.log(binaryString);
@@ -27,13 +107,15 @@ function onChange(event) {
         //Always generate a new iv every time your encrypt!
         iv: random_iv},
         key, //from generateKey or importKey above
-        arrayBuffer //ArrayBuffer of data you want to encrypt
+        array //ArrayBuffer of data you want to encrypt
         )
         .then(function(encrypted){
-          console.log(String.fromCharCode.apply(null, new Uint16Array(random_iv)));
+          console.log('Send this salt to a friend: [' + random_iv.toString() + ']');
+          // console.log(arrayBuffer);
         //returns an ArrayBuffer containing the encrypted data
           var dataView = new DataView(encrypted);
           var blob = new Blob([dataView], { type: file.type });
+          window.data = encrypted;
           var fd = new FormData();
           fd.append('fname', file.name);
           fd.append('data', blob, file.name);
@@ -57,7 +139,7 @@ function onChange(event) {
         key)
         .then(function(keydata){
           //returns the exported key data
-          alert(keydata.k);
+          console.log('Send this key to a friend: ' + keydata.k);
 
         })
         .catch(function(err){

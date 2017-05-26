@@ -11,6 +11,10 @@ app.get('/', function (req, res) {
   res.send('Hello World!')
 })
 
+app.get('/download', function(req, res) {
+  res.download(__dirname + '/img/test.txt');
+});
+
 app.route('/upload')
     .post(function (req, res, next) {
 
