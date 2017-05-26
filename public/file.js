@@ -1,22 +1,23 @@
 function download() {
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', '/download', true);
+  xhr.open('get', '/assets' + location.pathname, true);
   xhr.responseType = 'blob';
   // $.each(SERVER.authorization(), function(k, v) {
   //     xhr.setRequestHeader(k, v);
   // });
   // xhr.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+
   xhr.onload = function(e) {
       if (this.status == 200) {
           let self = this;
-          var blob = new Blob([this.response], {type: 'image/png'});
+          var blob = new Blob([this.response]);
           var arrayBuffer;
           var fileReader = new FileReader();
           fileReader.onload = function() {
               arrayBuffer = this.result;
               // console.log(arrayBuffer);
               var array = new Uint8Array(arrayBuffer);
-              var salt = new Uint8Array(JSON.parse(document.getElementById('salt').value));
+              salt = new Uint8Array(JSON.parse(document.getElementById('salt').value));
               window.crypto.subtle.importKey(
                   "jwk", //can be "jwk" or "raw"
                   {   //this is an example jwk key, "raw" would be an ArrayBuffer
@@ -44,13 +45,12 @@ function download() {
                   .then(function(decrypted){
                       //returns an ArrayBuffer containing the decrypted data
                       // let original = new Uint8Array(decrypted);
-                      console.log(self);
                       var dataView = new DataView(decrypted);
                       var blob = new Blob([dataView]);
                       var downloadUrl = URL.createObjectURL(blob);
                       var a = document.createElement("a");
                       a.href = downloadUrl;
-                      a.download = "test.txt";
+                      a.download = xhr.getResponseHeader('Content-Disposition').match(/filename="(.+)"/)[1];;
                       document.body.appendChild(a);
                       a.click();
                   })
@@ -65,10 +65,10 @@ function download() {
           };
           fileReader.readAsArrayBuffer(blob);
           // console.log(blob);
-          var downloadUrl = URL.createObjectURL(blob);
-          var a = document.createElement("a");
-          a.href = downloadUrl;
-          a.download = "feheroes.png";
+          // var downloadUrl = URL.createObjectURL(blob);
+          // var a = document.createElement("a");
+          // a.href = downloadUrl;
+          // // a.download = "feheroes.png";
           // document.body.appendChild(a);
           // a.click();
       } else {
@@ -124,7 +124,9 @@ function onChange(event) {
 
           xhr.open('post', '/upload', true);
           xhr.onreadystatechange = function() { 
-            // console.log('success');
+            if (xhr.readyState == XMLHttpRequest.DONE) {
+              console.log('Go to this URL: http://localhost:3000/download/'+xhr.responseText);
+            }
           };
 
           xhr.send(fd);
